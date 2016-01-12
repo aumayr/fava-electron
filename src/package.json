@@ -1,0 +1,16 @@
+{
+    "name"       : "beancount-web",
+    "description": "",
+    "version"    : "0.1.0a2",
+    "main"       : "main.js",
+    "author"     : "Dominik Aumayr <dominik@aumayr.name>",
+    "license"    : "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aumayr/beancount-web"
+    },
+    "dependencies": {
+        "request-promise": "*",
+        "electron-prebuilt": "*"
+    }
+}

@@ -49,6 +49,23 @@ app.on('ready', function() {
     ];
     console.log('fava', processDescription);
     var subpy = require('child_process').spawn('fava', processDescription);
+
+    subpy.on('error', (err) => {
+      console.log('Failed to start child process.');
+    });
+
+    subpy.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+    });
+
+    subpy.stderr.on('data', (data) => {
+      console.log(`stderr: ${data}`);
+    });
+
+    subpy.on('close', (code) => {
+      console.log(`child process exited with code ${code}`);
+    });
+
     var rq = require('request-promise');
     var mainAddr = 'http://' + settings.get('host') + ':' + settings.get('port');
 
@@ -62,7 +79,7 @@ app.on('ready', function() {
             titleBarStyle: "hidden-inset"
         });
         mainWindow.loadURL(mainAddr);
-        mainWindow.webContents.openDevTools();
+        // mainWindow.webContents.openDevTools();
 
         mainWindow.webContents.on('did-navigate', function(event, url) {
             mainWindow.webContents.insertCSS(`

@@ -10,9 +10,9 @@ To generate icons:
 
     $ iconutil -c icns FavaDesktop.iconset
 
-To pack the application (on a Mac; currently not working!):
+To pack the application (on a Mac):
 
-    $ electron-packager . Fava --platform=darwin --arch=x64 --icon=utils/FavaDesktop.icns --version=0.36.3 --overwrite
+    $ electron-packager . Fava --platform=darwin --arch=x64 --icon=utils/FavaDesktop.icns --overwrite
 
 ---
 **Caution**: This is far from finished. Consider it *alpha*-software. Contributions are very welcome :-)

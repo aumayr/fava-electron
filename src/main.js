@@ -10,35 +10,43 @@ if (settings.get('port') === undefined) {
     settings.set('port', 8889)
 }
 
+if (settings.get('host') === undefined) {
+    settings.set('host', 'localhost')
+}
+
 var mainWindow = null;
 
 app.on('window-all-closed', function() {
     app.quit();
 });
 
-const dialog = require('dialog');
+const {dialog} = require('electron');
 
 app.on('ready', function() {
-    if (settings.get('beancount-file') === undefined) {
-        dialog.showOpenDialog(function (fileNames) {
-            console.log(fileNames)
-            if (fileNames === undefined) return;
-            var fileName = fileNames[0];
-            settings.set('beancount-file', fileName);
-        });
+    var fileName = settings.get('beancount-file');
+    if (fileName === undefined) {
+        var fileNames = dialog.showOpenDialog({ title: 'Choose Beancount file' });
+        console.log(fileNames)
+        if (fileNames === undefined) return;
+        fileName = fileNames[0];
+        settings.set('beancount-file', fileName);
     }
 
-    if (settings.get('fava-settings-file') === undefined) {
-        dialog.showOpenDialog(function (fileNames) {
-            console.log(fileNames)
-            if (fileNames === undefined) return;
-            var fileName = fileNames[0];
-            settings.set('fava-settings-file', fileName);
-        });
-    }
+    // if (settings.get('fava-settings-file') === undefined) {
+    //     dialog.showOpenDialog(function (fileNames) {
+    //         console.log(fileNames)
+    //         if (fileNames === undefined) return;
+    //         var fileName = fileNames[0];
+    //         settings.set('fava-settings-file', fileName);
+    //     });
+    // }
 
     // TODO make settings work
-    var processDescription = [settings.get('beancount-file'), '-p', settings.get('port'), '--settings', settings.get('fava-settings-file')];
+    var processDescription = [
+        fileName,
+        '-p', settings.get('port'),
+        // '--settings', settings.get('fava-settings-file')
+    ];
     console.log('fava', processDescription);
     var subpy = require('child_process').spawn('fava', processDescription);
     var rq = require('request-promise');
@@ -61,24 +69,25 @@ app.on('ready', function() {
                 body header {
                     position: fixed;
                     width: 100%;
-                    margin-top: -36px;
-                    z-index: 7;
-                    height: 36px;
+                    z-index: 8;
+                    padding-left: 80px;
                 }
 
                 body .main aside {
                     position: fixed;
                     z-index: 7;
+                    height: 100%;
                 }
 
                 body .main article {
-                    margin-top: 36px;
+                    margin-top: 41px;
+                    margin-left: 180px;
                 }
 
                 body header .branding { margin-left: 68px; }
-                body header nav ul.topmenu>li>a { line-height: 36px; }
-                body header nav ul.topmenu>li>.filter { top: 36px; }
-                body header .branding img { margin-top: 5px; }
+                // body header nav ul.topmenu>li>a { line-height: 36px; }
+                // body header nav ul.topmenu>li>.filter { top: 36px; }
+                // body header .branding img { margin-top: 5px; }
 
                 body header .branding h1 {
                     line-height: 36px;

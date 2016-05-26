@@ -48,7 +48,7 @@ app.on('ready', function() {
         // '--settings', settings.get('fava-settings-file')
     ];
     console.log('fava', processDescription);
-    var subpy = require('child_process').spawn('fava', processDescription);
+    var subpy = require('child_process').spawn(app.getAppPath() + '/bin/fava', processDescription);
 
     subpy.on('error', (err) => {
       console.log('Failed to start child process.');

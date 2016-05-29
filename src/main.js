@@ -84,31 +84,11 @@ app.on('ready', function() {
         mainWindow.webContents.on('did-navigate', function(event, url) {
             mainWindow.webContents.insertCSS(`
                 body header {
-                    position: fixed;
-                    width: 100%;
-                    z-index: 8;
+                    -webkit-app-region: drag;
                     padding-left: 80px;
                 }
-
-                body .main aside {
-                    position: fixed;
-                    z-index: 7;
-                    height: 100%;
-                }
-
-                body .main article {
-                    margin-top: 41px;
-                    margin-left: 180px;
-                }
-
-                body header .branding { margin-left: 68px; }
-                // body header nav ul.topmenu>li>a { line-height: 36px; }
-                // body header nav ul.topmenu>li>.filter { top: 36px; }
-                // body header .branding img { margin-top: 5px; }
-
-                body header .branding h1 {
-                    line-height: 36px;
-                    padding: 0 10px;
+                body header img {
+                    display: none;
                 }
             `);
         });

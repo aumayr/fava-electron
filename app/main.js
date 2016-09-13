@@ -1,11 +1,80 @@
-const {app, dialog, BrowserWindow} = require('electron');
+const {app, dialog, BrowserWindow, Menu} = require('electron');
 const childProcess = require('child_process');
 const rq = require('request-promise');
 const settings = require('electron-settings');
 
+const template = [
+{
+  label: 'File',
+  submenu: [
+  {
+    label: 'Open Beancount file',
+    accelerator: 'CmdOrCtrl+O',
+    click (item, window) {
+      chooseFilename();
+      // TODO: possible best to integrate an interface on fava to do this
+      // restarting the process is harder to get right ...
+      //
+      // subprocess.kill('SIGTERM');
+      // subprocess = startFava();
+    }
+  },
+  ]
+},
+{
+  label: 'View',
+  submenu: [
+  {
+    label: 'Reload',
+    accelerator: 'CmdOrCtrl+R',
+    click (item, focusedWindow) {
+      if (focusedWindow) focusedWindow.reload()
+    }
+  },
+  {
+    label: 'Toggle Developer Tools',
+    accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+    click (item, focusedWindow) {
+      if (focusedWindow) focusedWindow.webContents.toggleDevTools()
+    }
+  },
+  {
+    type: 'separator'
+  },
+  {
+    role: 'resetzoom'
+  },
+  {
+    role: 'zoomin'
+  },
+  {
+    role: 'zoomout'
+  },
+  {
+    type: 'separator'
+  },
+  {
+    role: 'togglefullscreen'
+  }
+  ]
+},
+{
+  role: 'window',
+  submenu: [
+  {
+    role: 'minimize'
+  },
+  {
+    role: 'close'
+  }
+  ]
+}
+];
+
+const menu = Menu.buildFromTemplate(template)
+
 settings.defaults({
     port: 8899,
-    host: 'localhost',
     bounds: {
         width: 1260,
         height: 800,
@@ -16,9 +85,9 @@ let mainWindow;
 let mainAddr;
 let subprocess;
 
-function startFava(fileName) {
+function startFava() {
     const args = [
-        fileName,
+        settings.getSync('beancount-file'),
         '-p',
         settings.getSync('port'),
     ];
@@ -43,6 +112,13 @@ function startFava(fileName) {
     });
 
     return subprocess;
+}
+
+function chooseFilename() {
+    let fileNames = dialog.showOpenDialog({ title: 'Choose Beancount file' });
+    if (fileNames === undefined) return;
+    fileName = fileNames[0];
+    settings.setSync('beancount-file', fileName);
 }
 
 function createWindow(){
@@ -101,6 +177,16 @@ function createWindow(){
     });
 };
 
+function startUp(){
+    rq(mainAddr)
+    .then(htmlString => {
+        createWindow();
+    })
+    .catch(err => {
+        startUp();
+    });
+};
+
 app.on('window-all-closed', () => {
     app.quit();
 });
@@ -110,26 +196,14 @@ app.on('quit', () => {
 });
 
 app.on('ready', () => {
-    let fileName = settings.getSync('beancount-file');
-    if (fileName === undefined) {
-        var fileNames = dialog.showOpenDialog({ title: 'Choose Beancount file' });
-        if (fileNames === undefined) return;
-        fileName = fileNames[0];
-        settings.setSync('beancount-file', fileName);
+    Menu.setApplicationMenu(menu)
+
+    if (settings.getSync('beancount-file') === undefined) {
+        chooseFilename();
     }
 
-    mainAddr = `http://${settings.getSync('host')}:${settings.getSync('port')}`;
-    subprocess = startFava(fileName);
-
-    function startUp(){
-        rq(mainAddr)
-        .then(htmlString => {
-            createWindow();
-        })
-        .catch(err => {
-            startUp();
-        });
-    };
+    mainAddr = `http://localhost:${settings.getSync('port')}`;
+    subprocess = startFava();
 
     startUp();
 });

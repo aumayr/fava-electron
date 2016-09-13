@@ -1,135 +1,133 @@
-const electron = require('electron');
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
-electron.crashReporter.start({companyName: "Dominik Aumayr <dominik@aumayr.name>", submitURL: ""});
+const {app, dialog, BrowserWindow} = require('electron');
+const child_process = require('child_process');
+const rq = require('request-promise');
+const settings = require('electron-settings');
 
-const ElectronSettings = require('electron-settings');
-var settings = new ElectronSettings();
+settings.defaults({
+    port: 8899,
+    host: 'localhost',
+    bounds: {
+        width: 1260,
+        height: 800,
+    },
+})
 
-if (settings.get('port') === undefined) {
-    settings.set('port', 8889)
+let mainWindow;
+let mainAddr;
+let subprocess;
+
+function startFava(fileName) {
+    const processDescription = [
+        fileName,
+        '-p', settings.getSync('port'),
+    ];
+
+    const subprocess = child_process.spawn(app.getAppPath() + '/bin/fava', processDescription);
+
+    subprocess.on('error', err => {
+      console.log('Failed to start Fava.');
+    });
+
+    // subprocess.stdout.on('data', data => {
+    //   console.log(`Fava stdout: ${data}`);
+    // });
+
+    // subprocess.stderr.on('data', data => {
+    //   console.log(`Fava stderr: ${data}`);
+    // });
+
+    subprocess.on('close', code => {
+      console.log(`Fava exited with code ${code}`);
+    });
+
+    return subprocess;
 }
 
-if (settings.get('host') === undefined) {
-    settings.set('host', 'localhost')
-}
+function createWindow(){
+    const bounds = settings.getSync('bounds');
 
-var mainWindow = null;
+    mainWindow = new BrowserWindow({
+        'node-integration': false,
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
+        minWidth: 600,
+        minHeight: 400,
+        titleBarStyle: "hidden-inset"
+    });
 
-app.on('window-all-closed', function() {
+    mainWindow.loadURL(mainAddr);
+    // mainWindow.webContents.openDevTools();
+
+    mainWindow.webContents.on('did-navigate', (event, url) => {
+        mainWindow.webContents.insertCSS(`
+            body header {
+                -webkit-app-region: drag;
+                padding-left: 80px;
+            }
+            body header svg {
+                display: none;
+            }
+        `);
+    });
+
+    // mainWindow.webContents.on('did-finish-load', function() {
+    //     mainWindow.webContents.executeJavaScript(`
+    //         window.onclick = function(e) {
+    //             if (e.target.localName == 'a') {
+    //                 e.preventDefault();
+    //                 $.ajax({
+    //                     async: true,
+    //                     type: "GET",
+    //                     url: e.target.getAttribute('href'),
+    //                     success: function (html) {
+    //                         document.documentElement.innerHTML = html;
+    //                     }
+    //                 });
+    //             }
+    //         };
+    //     `);
+    // });
+
+    mainWindow.on('close', () => {
+        settings.setSync('bounds', mainWindow.getBounds());
+    });
+
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
+};
+
+app.on('window-all-closed', () => {
     app.quit();
 });
 
-const {dialog} = require('electron');
+app.on('quit', () => {
+    subprocess.kill('SIGTERM');
+});
 
-app.on('ready', function() {
-    var fileName = settings.get('beancount-file');
+app.on('ready', () => {
+    let fileName = settings.getSync('beancount-file');
     if (fileName === undefined) {
         var fileNames = dialog.showOpenDialog({ title: 'Choose Beancount file' });
-        console.log(fileNames)
         if (fileNames === undefined) return;
         fileName = fileNames[0];
-        settings.set('beancount-file', fileName);
+        settings.setSync('beancount-file', fileName);
     }
 
-    // if (settings.get('fava-settings-file') === undefined) {
-    //     dialog.showOpenDialog(function (fileNames) {
-    //         console.log(fileNames)
-    //         if (fileNames === undefined) return;
-    //         var fileName = fileNames[0];
-    //         settings.set('fava-settings-file', fileName);
-    //     });
-    // }
+    mainAddr = `http://${settings.getSync('host')}:${settings.getSync('port')}`;
+    subprocess = startFava(fileName);
 
-    // TODO make settings work
-    var processDescription = [
-        fileName,
-        '-p', settings.get('port'),
-        // '--settings', settings.get('fava-settings-file')
-    ];
-    console.log('fava', processDescription);
-    var subpy = require('child_process').spawn(app.getAppPath() + '/bin/fava', processDescription);
-
-    subpy.on('error', (err) => {
-      console.log('Failed to start child process.');
-    });
-
-    subpy.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-    });
-
-    subpy.stderr.on('data', (data) => {
-      console.log(`stderr: ${data}`);
-    });
-
-    subpy.on('close', (code) => {
-      console.log(`child process exited with code ${code}`);
-    });
-
-    var rq = require('request-promise');
-    var mainAddr = 'http://' + settings.get('host') + ':' + settings.get('port');
-
-    var openWindow = function(){
-        mainWindow = new BrowserWindow({
-            'node-integration': false,
-            width: 1260,
-            height: 800,
-            minWidth: 1260,
-            minHeight: 800,
-            titleBarStyle: "hidden-inset"
-        });
-        mainWindow.loadURL(mainAddr);
-        // mainWindow.webContents.openDevTools();
-
-        mainWindow.webContents.on('did-navigate', function(event, url) {
-            mainWindow.webContents.insertCSS(`
-                body header {
-                    -webkit-app-region: drag;
-                    padding-left: 80px;
-                }
-                body header img {
-                    display: none;
-                }
-            `);
-        });
-
-        // mainWindow.webContents.on('did-finish-load', function() {
-        //     mainWindow.webContents.executeJavaScript(`
-        //         window.onclick = function(e) {
-        //             if (e.target.localName == 'a') {
-        //                 e.preventDefault();
-        //                 $.ajax({
-        //                     async: true,
-        //                     type: "GET",
-        //                     url: e.target.getAttribute('href'),
-        //                     success: function (html) {
-        //                         document.documentElement.innerHTML = html;
-        //                     }
-        //                 });
-        //             }
-        //         };
-        //     `);
-        // });
-
-        mainWindow.on('closed', function() {
-            mainWindow = null;
-            subpy.kill('SIGINT');
-        });
-    };
-
-    var startUp = function(){
+    function startUp(){
         rq(mainAddr)
-        .then(function(htmlString){
-            // console.log('server started!');
-            openWindow();
+        .then(htmlString => {
+            createWindow();
         })
-        .catch(function(err){
-            // console.log('waiting for the server start...');
+        .catch(err => {
             startUp();
         });
     };
 
-    // fire!
     startUp();
-    // TODO save window state
 });

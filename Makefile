@@ -23,4 +23,4 @@ icons:
 	iconutil -c icns utils/FavaDesktop.iconset
 
 app:
-	./node_modules/.bin/electron-packager . Fava --platform=darwin --arch=x64 --icon=utils/FavaDesktop.icns --overwrite
+	./node_modules/.bin/electron-packager . Fava --icon=utils/FavaDesktop.icns --overwrite

@@ -124,22 +124,17 @@ function chooseFilename() {
 function createWindow(){
     const bounds = settings.getSync('bounds');
 
-    mainWindow = new BrowserWindow({
+    const win = new BrowserWindow({
         'node-integration': false,
-        width: bounds.width,
-        height: bounds.height,
-        x: bounds.x,
-        y: bounds.y,
         minWidth: 600,
         minHeight: 400,
         titleBarStyle: "hidden-inset"
     });
 
-    mainWindow.loadURL(mainAddr);
-    // mainWindow.webContents.openDevTools();
+    win.loadURL(`file://${__dirname}/index.html`)
 
-    mainWindow.webContents.on('did-navigate', (event, url) => {
-        mainWindow.webContents.insertCSS(`
+    win.webContents.on('did-navigate', (event, url) => {
+        win.webContents.insertCSS(`
             body header {
                 -webkit-app-region: drag;
                 padding-left: 80px;
@@ -168,19 +163,22 @@ function createWindow(){
     //     `);
     // });
 
-    mainWindow.on('close', () => {
-        settings.setSync('bounds', mainWindow.getBounds());
+    win.on('close', () => {
+        settings.setSync('bounds', win.getBounds());
     });
 
-    mainWindow.on('closed', () => {
-        mainWindow = null;
+    win.on('closed', () => {
+        delete win;
     });
+
+    return win;
 };
 
 function startUp(){
     rq(mainAddr)
     .then(htmlString => {
-        createWindow();
+        mainWindow.setBounds(settings.getSync('bounds'));
+        mainWindow.loadURL(mainAddr);
     })
     .catch(err => {
         startUp();
@@ -204,6 +202,7 @@ app.on('ready', () => {
 
     mainAddr = `http://localhost:${settings.getSync('port')}`;
     subprocess = startFava();
+    mainWindow = createWindow();
 
     startUp();
 });

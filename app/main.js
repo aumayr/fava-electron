@@ -1,5 +1,5 @@
 const {app, dialog, BrowserWindow} = require('electron');
-const child_process = require('child_process');
+const childProcess = require('child_process');
 const rq = require('request-promise');
 const settings = require('electron-settings');
 
@@ -17,12 +17,14 @@ let mainAddr;
 let subprocess;
 
 function startFava(fileName) {
-    const processDescription = [
+    const args = [
         fileName,
-        '-p', settings.getSync('port'),
+        '-p',
+        settings.getSync('port'),
     ];
 
-    const subprocess = child_process.spawn(app.getAppPath() + '/bin/fava', processDescription);
+    // click will abort if the locale is not set
+    const subprocess = childProcess.spawn(app.getAppPath() + '/bin/fava', args, {env: {LC_ALL: 'en_US.UTF-8'}});
 
     subprocess.on('error', err => {
       console.log('Failed to start Fava.');

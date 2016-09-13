@@ -1,0 +1,17 @@
+{
+  "name": "fava-electron",
+  "description": "",
+  "version": "0.1.0",
+  "main": "main.js",
+  "author": "Dominik Aumayr <dominik@aumayr.name>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aumayr/fava-electron"
+  },
+  "dependencies": {
+    "electron": "1.3.5",
+    "electron-settings": "^2.2.1",
+    "request-promise": "^4.1.1"
+  }
+}

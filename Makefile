@@ -17,8 +17,8 @@ build/fava:
 	git clone git@github.com:aumayr/fava.git build/fava
 
 clean:
-	rm -rf build bin dist
-	rm -rf node_modules
+	rm -rf build app/bin dist
+	rm -rf node_modules app/node_modules
 
 icons:
 	iconutil -c icns utils/FavaDesktop.iconset

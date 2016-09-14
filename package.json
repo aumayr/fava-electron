@@ -1,9 +1,13 @@
 {
   "devDependencies": {
+    "electron": "1.3.5",
     "electron-packager": "^8.0.0",
-    "electron": "1.3.5"
+    "eslint": "^3.5.0",
+    "eslint-config-airbnb-base": "^7.1.0",
+    "eslint-plugin-import": "^1.15.0"
   },
   "scripts": {
+    "lint": "eslint app/main.js",
     "start": "electron app"
   }
 }

@@ -5,6 +5,14 @@ const settings = require('electron-settings');
 
 const template = [
 {
+  label: 'Fava',
+  submenu: [
+  {
+    role: 'quit',
+  },
+  ]
+},
+{
   label: 'File',
   submenu: [
   {

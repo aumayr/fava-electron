@@ -17,7 +17,9 @@ let subprocess;
 
 function chooseFilename() {
   const fileNames = dialog.showOpenDialog({ title: 'Choose Beancount file' });
-  if (fileNames === undefined) return;
+  if (fileNames === undefined) {
+    return;
+  }
   settings.setSync('beancount-file', fileNames[0]);
 }
 
@@ -114,13 +116,13 @@ function startFava() {
     console.log('Failed to start Fava.');
   });
 
-  // subprocess.stdout.on('data', data => {
-  //   console.log(`Fava stdout: ${data}`);
-  // });
+  process.stdout.on('data', (data) => {
+    console.log(`Fava stdout: ${data}`);
+  });
 
-  // subprocess.stderr.on('data', data => {
-  //   console.log(`Fava stderr: ${data}`);
-  // });
+  process.stderr.on('data', (data) => {
+    console.log(`Fava stderr: ${data}`);
+  });
 
   process.on('close', (code) => {
     console.log(`Fava exited with code ${code}`);
@@ -132,8 +134,10 @@ function startFava() {
 function createWindow() {
   let win = new BrowserWindow({
     'node-integration': false,
-    minWidth: 600,
-    minHeight: 400,
+    minWidth: 500,
+    width: 500,
+    minHeight: 250,
+    height: 250,
     titleBarStyle: 'hidden-inset',
   });
 
@@ -150,24 +154,6 @@ function createWindow() {
         }
         `);
   });
-
-  // mainWindow.webContents.on('did-finish-load', function() {
-  //     mainWindow.webContents.executeJavaScript(`
-  //         window.onclick = function(e) {
-  //             if (e.target.localName == 'a') {
-  //                 e.preventDefault();
-  //                 $.ajax({
-  //                     async: true,
-  //                     type: "GET",
-  //                     url: e.target.getAttribute('href'),
-  //                     success: function (html) {
-  //                         document.documentElement.innerHTML = html;
-  //                     }
-  //                 });
-  //             }
-  //         };
-  //     `);
-  // });
 
   win.on('close', () => {
     settings.setSync('bounds', win.getBounds());
@@ -207,8 +193,8 @@ app.on('ready', () => {
   }
 
   mainAddr = `http://localhost:${settings.getSync('port')}`;
-  subprocess = startFava();
   mainWindow = createWindow();
+  subprocess = startFava();
 
   startUp();
 });

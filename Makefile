@@ -1,19 +1,20 @@
-.PHONY: src utils
+.PHONY: src utils node_modules
 
-all: bin/fava node_modules
+all: node_modules bin/fava
 
 node_modules:
-	npm install
-	cd app && npm install
+	npm update
+	cd app && npm update
 
 bin/fava: build/fava
 	cd build/fava; git fetch; git reset --hard origin/master
+	make -C build/fava
 	make -C build/fava pyinstaller
 	mkdir -p app/bin
 	cp build/fava/dist/fava app/bin/fava
 
 build/fava:
-	git clone git@github.com:aumayr/fava.git build/fava
+	git clone git@github.com:beancount/fava.git build/fava
 
 clean:
 	rm -rf build/fava app/bin dist

@@ -3,6 +3,8 @@ const childProcess = require('child_process');
 const rq = require('request-promise');
 const settings = require('electron-settings');
 
+const darwin = (process.platform === 'darwin');
+
 settings.defaults({
   port: 8899,
   bounds: {
@@ -61,7 +63,7 @@ const template = [
       },
       {
         label: 'Toggle Developer Tools',
-        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        accelerator: darwin ? 'Alt+Command+I' : 'Ctrl+Shift+I',
         click(item, focusedWindow) {
           if (focusedWindow) focusedWindow.webContents.toggleDevTools();
         },
@@ -103,30 +105,30 @@ const menu = Menu.buildFromTemplate(template);
 
 function startFava() {
   const args = [
-    settings.getSync('beancount-file'),
     '-p',
     settings.getSync('port'),
+    settings.getSync('beancount-file'),
   ];
 
-  // click will abort if the locale is not set
+  // click aborts if the locale is not set
   const process = childProcess.spawn(`${app.getAppPath()}/bin/fava`, args,
       { env: { LC_ALL: 'en_US.UTF-8' } });
 
-  process.on('error', () => {
-    console.log('Failed to start Fava.');
-  });
+  // process.on('error', () => {
+  //   console.log('Failed to start Fava.');
+  // });
 
-  process.stdout.on('data', (data) => {
-    console.log(`Fava stdout: ${data}`);
-  });
+  // process.stdout.on('data', (data) => {
+  //   console.log(`Fava stdout: ${data}`);
+  // });
 
-  process.stderr.on('data', (data) => {
-    console.log(`Fava stderr: ${data}`);
-  });
+  // process.stderr.on('data', (data) => {
+  //   console.log(`Fava stderr: ${data}`);
+  // });
 
-  process.on('close', (code) => {
-    console.log(`Fava exited with code ${code}`);
-  });
+  // process.on('close', (code) => {
+  //   console.log(`Fava exited with code ${code}`);
+  // });
 
   return process;
 }
@@ -144,15 +146,28 @@ function createWindow() {
   win.loadURL(`file://${__dirname}/index.html`);
 
   win.webContents.on('did-navigate', () => {
-    win.webContents.insertCSS(`
-        body header {
-          -webkit-app-region: drag;
-          padding-left: 80px;
-        }
-        body header svg {
-          display: none;
-        }
-        `);
+    if (darwin) {
+      win.webContents.insertCSS(`
+          body header {
+            -webkit-app-region: drag;
+            padding-left: 80px;
+          }
+
+          body header form {
+            -webkit-app-region: no-drag;
+          }
+          `);
+    } else {
+      win.webContents.insertCSS(`
+          body header {
+            -webkit-app-region: drag;
+          }
+
+          body header form {
+            -webkit-app-region: no-drag;
+          }
+          `);
+    }
   });
 
   win.on('close', () => {
@@ -177,8 +192,16 @@ function startUp() {
   });
 }
 
+app.on('activate', () => {
+  if (mainWindow === null) {
+    mainWindow = createWindow();
+  }
+});
+
 app.on('window-all-closed', () => {
-  app.quit();
+  if (!darwin) {
+    app.quit();
+  }
 });
 
 app.on('quit', () => {

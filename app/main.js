@@ -5,27 +5,79 @@ const settings = require('electron-settings');
 
 const darwin = (process.platform === 'darwin');
 
+// TODO: pick an open random port.
+const port = 8899;
+const mainAddr = `http://localhost:${port}`;
+
 settings.defaults({
-  port: 8899,
   bounds: {
     width: 1260,
     height: 800,
   },
+  'beancount-file': [],
 });
 
+let splashScreenWindow;
 let mainWindow;
-let mainAddr;
 let subprocess;
 
 function chooseFilename() {
   const fileNames = dialog.showOpenDialog({ title: 'Choose Beancount file' });
   if (fileNames === undefined) {
-    return;
+    return false;
   }
-  settings.setSync('beancount-file', fileNames[0]);
+  let values = settings.getSync('beancount-file');
+  if (!values) {
+    values = [];
+  }
+  settings.setSync('beancount-file', values.concat(fileNames));
+  return true;
 }
 
-const template = [
+function startFava() {
+  const args = [
+    '-p',
+    settings.getSync('port'),
+  ].concat(settings.getSync('beancount-file'));
+
+  // click aborts if the locale is not set
+  const process = childProcess.spawn(`${app.getAppPath()}/bin/fava`, args,
+      { env: { LC_ALL: 'en_US.UTF-8' } });
+
+  // process.on('error', () => { console.log('Failed to start Fava.'); });
+  // process.stdout.on('data', (data) => { console.log(`Fava stdout: ${data}`); });
+  // process.stderr.on('data', (data) => { console.log(`Fava stderr: ${data}`); });
+  // process.on('close', (code) => { console.log(`Fava exited with code ${code}`); });
+
+  return process;
+}
+
+function loadMainPage() {
+  rq(mainAddr)
+    .then(() => {
+      mainWindow.setBounds(settings.getSync('bounds'));
+      mainWindow.loadURL(mainAddr);
+    })
+  .catch(() => {
+    loadMainPage();
+  });
+}
+
+function openBeancountFile() {
+  if (!chooseFilename()) {
+    return;
+  }
+  subprocess.kill('SIGTERM');
+  subprocess = startFava();
+  loadMainPage();
+}
+
+function resetFiles() {
+  settings.setSync('beancount-file', []);
+  openBeancountFile();
+}
+
+const menu = Menu.buildFromTemplate([
   {
     label: 'Fava',
     submenu: [
@@ -40,14 +92,11 @@ const template = [
       {
         label: 'Open Beancount file',
         accelerator: 'CmdOrCtrl+O',
-        click() {
-          chooseFilename();
-          // TODO: possible best to integrate an interface on fava to do this
-          // restarting the process is harder to get right ...
-          //
-          // subprocess.kill('SIGTERM');
-          // subprocess = startFava();
-        },
+        click: openBeancountFile,
+      },
+      {
+        label: 'Reset files',
+        click: resetFiles,
       },
     ],
   },
@@ -99,53 +148,41 @@ const template = [
       },
     ],
   },
-];
+]);
 
-const menu = Menu.buildFromTemplate(template);
+function createSplashScreenWindow() {
+  let win = new BrowserWindow({
+    width: 500,
+    height: 250,
+    frame: false,
+  });
 
-function startFava() {
-  const args = [
-    '-p',
-    settings.getSync('port'),
-    settings.getSync('beancount-file'),
-  ];
+  win.loadURL(`file://${__dirname}/index.html`);
 
-  // click aborts if the locale is not set
-  const process = childProcess.spawn(`${app.getAppPath()}/bin/fava`, args,
-      { env: { LC_ALL: 'en_US.UTF-8' } });
+  win.on('closed', () => {
+    win = null;
+  });
 
-  // process.on('error', () => {
-  //   console.log('Failed to start Fava.');
-  // });
-
-  // process.stdout.on('data', (data) => {
-  //   console.log(`Fava stdout: ${data}`);
-  // });
-
-  // process.stderr.on('data', (data) => {
-  //   console.log(`Fava stderr: ${data}`);
-  // });
-
-  // process.on('close', (code) => {
-  //   console.log(`Fava exited with code ${code}`);
-  // });
-
-  return process;
+  return win;
 }
 
-function createWindow() {
+function createMainWindow() {
   let win = new BrowserWindow({
     'node-integration': false,
     minWidth: 500,
     width: 500,
     minHeight: 250,
     height: 250,
+    show: false,
     titleBarStyle: 'hidden-inset',
   });
 
-  win.loadURL(`file://${__dirname}/index.html`);
+  win.once('ready-to-show', () => {
+    splashScreenWindow.close();
+    win.show();
+  });
 
-  win.webContents.on('did-navigate', () => {
+  win.webContents.on('did-finish-load', () => {
     if (darwin) {
       win.webContents.insertCSS(`
           body header {
@@ -171,7 +208,7 @@ function createWindow() {
   });
 
   win.on('close', () => {
-    settings.setSync('bounds', win.getBounds());
+    settings.set('bounds', win.getBounds());
   });
 
   win.on('closed', () => {
@@ -179,17 +216,6 @@ function createWindow() {
   });
 
   return win;
-}
-
-function startUp() {
-  rq(mainAddr)
-    .then(() => {
-      mainWindow.setBounds(settings.getSync('bounds'));
-      mainWindow.loadURL(mainAddr);
-    })
-  .catch(() => {
-    startUp();
-  });
 }
 
 app.on('activate', () => {
@@ -205,19 +231,21 @@ app.on('window-all-closed', () => {
 });
 
 app.on('quit', () => {
+  mainWindow.close();
   subprocess.kill('SIGTERM');
 });
 
 app.on('ready', () => {
   Menu.setApplicationMenu(menu);
 
-  if (settings.getSync('beancount-file') === undefined) {
+  const files = settings.getSync('beancount-file');
+  if (!files || !files.length) {
     chooseFilename();
   }
 
-  mainAddr = `http://localhost:${settings.getSync('port')}`;
-  mainWindow = createWindow();
-  subprocess = startFava();
+  splashScreenWindow = createSplashScreenWindow();
+  mainWindow = createMainWindow();
 
-  startUp();
+  subprocess = startFava();
+  loadMainPage();
 });

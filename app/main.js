@@ -40,9 +40,9 @@ function startFava() {
     settings.getSync('port'),
   ].concat(settings.getSync('beancount-file'));
 
+  const favaPath = `${app.getAppPath()}/bin/fava`.replace('app.asar', 'app.asar.unpacked');
   // click aborts if the locale is not set
-  const process = childProcess.spawn(`${app.getAppPath()}/bin/fava`, args,
-      { env: { LC_ALL: 'en_US.UTF-8' } });
+  const process = childProcess.execFile(favaPath, args, { env: { LC_ALL: 'en_US.UTF-8' } });
 
   // process.on('error', () => { console.log('Failed to start Fava.'); });
   // process.stdout.on('data', (data) => { console.log(`Fava stdout: ${data}`); });
@@ -220,7 +220,7 @@ function createMainWindow() {
 
 app.on('activate', () => {
   if (mainWindow === null) {
-    mainWindow = createWindow();
+    mainWindow = createMainWindow();
   }
 });
 
@@ -231,7 +231,9 @@ app.on('window-all-closed', () => {
 });
 
 app.on('quit', () => {
-  mainWindow.close();
+  if (!mainWindow.isDestroyed()) {
+    mainWindow.close();
+  }
   subprocess.kill('SIGTERM');
 });
 

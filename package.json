@@ -7,14 +7,14 @@
   },
   "devDependencies": {
     "electron": "^1.4.4",
-    "electron-builder": "^12.2.2",
+    "electron-builder": "^15.5.1",
     "eslint": "^3.8.1",
     "eslint-config-airbnb-base": "^11.0.0",
     "eslint-plugin-import": "^2.0.1"
   },
   "build": {
     "appId": "com.fava-electron",
-    "asar": false,
+    "asarUnpack": "bin/fava",
     "mac": {
       "category": "public.app-category.finance"
     }

@@ -9,9 +9,9 @@ node_modules:
 bin/fava: build/fava
 	cd build/fava; git fetch; git reset --hard origin/master
 	make -C build/fava
-	make -C build/fava pyinstaller
+	pyinstaller --clean build/fava/contrib/pyinstaller.spec
 	mkdir -p app/bin
-	cp build/fava/dist/fava app/bin/fava
+	cp build/fava/dist/cli app/bin/fava
 
 build/fava:
 	git clone git@github.com:beancount/fava.git build/fava

@@ -15,6 +15,6 @@
     "request-promise": "^4.1.1"
   },
   "devDependencies": {
-    "electron": "^1.4.15"
+    "electron": "^9.1.0"
   }
 }

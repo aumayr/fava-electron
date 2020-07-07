@@ -6,7 +6,7 @@
     "dist": "build"
   },
   "devDependencies": {
-    "electron": "^1.4.4",
+    "electron": "^9.1.0",
     "electron-builder": "^15.5.1",
     "eslint": "^3.8.1",
     "eslint-config-airbnb-base": "^11.0.0",
